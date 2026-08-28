@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- ============================================================
+         NSTU Bus Tracker - Noakhali Science & Technology University
+         HTML5 Semantic Document | Smart Telemetry System v3.0
+    ============================================================ -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta Tags -->
+    <title>NSTU Bus Tracker | Smart Campus Transport Portal</title>
+    <meta name="title" content="NSTU Bus Tracker | Smart Campus Transport Portal" />
+    <meta name="description" content="Real-time GPS bus tracking system for Noakhali Science & Technology University. Track buses, manage routes, view schedules, and get live arrival times for NSTU campus transport." />
+    <meta name="keywords" content="NSTU, Bus Tracker, Campus Transport, Noakhali Science Technology University, GPS Tracking, Live Bus, Schedule, Route Planner" />
+    <meta name="author" content="NSTU Transport Department" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    <meta name="theme-color" content="#f59e0b" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="http://localhost/NSTU-BUS-TRACKER/" />
+    <meta property="og:title" content="NSTU Bus Tracker | Smart Campus Transport Portal" />
+    <meta property="og:description" content="Real-time GPS bus tracking system for Noakhali Science & Technology University. Track live bus locations, view schedules and plan your campus commute." />
+    <meta property="og:image" content="/nstu_bus_hero_dark.png" />
+    <meta property="og:site_name" content="NSTU Transport Portal" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NSTU Bus Tracker | Smart Campus Transport Portal" />
+    <meta name="twitter:description" content="Real-time GPS bus tracking for NSTU campus. Live bus locations, schedules and route planning." />
+    <meta name="twitter:image" content="/nstu_bus_hero_dark.png" />
+
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Preload Critical Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800;900&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800;900&display=swap" />
+
+    <!-- Structured Data (JSON-LD) for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "NSTU Bus Tracker",
+      "description": "Real-time GPS bus tracking system for Noakhali Science & Technology University campus transport management.",
+      "url": "http://localhost/NSTU-BUS-TRACKER/",
+      "applicationCategory": "TransportationApplication",
+      "operatingSystem": "Web Browser",
+      "author": {
+        "@type": "Organization",
+        "name": "NSTU Transport Department",
+        "url": "https://nstu.edu.bd"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "BDT"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <!-- 
+      NSTU Bus Tracker - React Application Root
+      Technology Stack: HTML5 | JavaScript (React/Vite) | C++ (Route Algorithm) | PHP (API) | MySQL
+    -->
+
+    <!-- Application Mount Point -->
+    <div id="root" role="main" aria-label="NSTU Bus Tracker Application">
+      <!-- Fallback content for no-JS environments -->
+      <noscript>
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#060a14;color:#f59e0b;font-family:sans-serif;text-align:center;padding:20px;">
+          <div>
+            <h1 style="font-size:24px;margin-bottom:10px;">🚌 NSTU Bus Tracker</h1>
+            <p style="color:#94a3b8;">JavaScript is required to run this application. Please enable JavaScript in your browser.</p>
+          </div>
+        </div>
+      </noscript>
+    </div>
+
+    <!-- React Application Entry Point -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
