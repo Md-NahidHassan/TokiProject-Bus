@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bus, MapPin, Clock, Users, PlayCircle, StopCircle, Navigation, Radio, Sparkles, ShieldCheck } from 'lucide-react';
 import { PageHeader, SectionCard, StatCard } from '../../components/ui/SharedComponents';
 import { useAuth } from '../../context/AuthContext';
 import { mockStudents, mockSchedules } from '../../data/mockData';
+import { DriverAPI, USE_REAL_PHP_BACKEND } from '../../services/api';
 import toast from 'react-hot-toast';
 
 export default function DriverDashboard() {
@@ -11,6 +12,47 @@ export default function DriverDashboard() {
 
   const myStudents = mockStudents.filter(s => s.bus === user?.busAssigned);
   const mySchedule = mockSchedules.filter(s => s.bus === user?.busAssigned);
+
+  useEffect(() => {
+    let watchId;
+    if (tripActive && navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const speed = position.coords.speed ? Math.round(position.coords.speed * 3.6) : Math.floor(Math.random() * 20) + 30; // fallback speed
+          
+          if (USE_REAL_PHP_BACKEND) {
+            DriverAPI.updateGPS({
+              driver_id: user?.id || 3,
+              lat,
+              lng,
+              speed,
+              status: 'in_transit'
+            });
+          }
+        },
+        (error) => {
+          console.warn("GPS error", error);
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 5000 }
+      );
+    } else if (!tripActive && USE_REAL_PHP_BACKEND) {
+      if (user?.id) {
+        DriverAPI.updateGPS({
+          driver_id: user?.id || 3,
+          lat: 22.79, // default terminal lat
+          lng: 91.10, // default terminal lng
+          speed: 0,
+          status: 'inactive'
+        });
+      }
+    }
+
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
+  }, [tripActive, user]);
 
   const handleStartTrip = () => {
     setTripActive(true);

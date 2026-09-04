@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Bus, Eye } from 'lucide-react';
 import { PageHeader, SectionCard, SearchBar, Modal, StatusDot } from '../components/ui/SharedComponents';
 import { mockBuses } from '../data/mockData';
+import { AdminAPI, USE_REAL_PHP_BACKEND } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const FIELDS = [
@@ -20,11 +22,38 @@ const FIELDS = [
 const DEFAULT_FORM = FIELDS.reduce((a, f) => ({ ...a, [f.key]: '' }), {});
 
 export default function BusesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'transport_admin';
+
   const [buses, setBuses] = useState(mockBuses);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null); // null | 'add' | 'edit' | 'view'
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
+
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const res = await AdminAPI.getBuses();
+      if (res && res.success) {
+        setBuses(res.data.map(b => ({
+          id: b.id,
+          busNumber: b.bus_number,
+          registration: b.registration_number,
+          capacity: b.capacity,
+          type: 'Non-AC',
+          model: 'Unknown',
+          fuel: 'Diesel',
+          year: 2020,
+          fitness: '2025-12-31',
+          insurance: '2025-12-31',
+          status: b.status || 'active',
+          driver: b.driver_name || 'Unassigned',
+          route: b.route_name || 'Unassigned'
+        })));
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, []);
 
   const filtered = buses.filter(b =>
     b.busNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -36,20 +65,44 @@ export default function BusesPage() {
   const openEdit = (b) => { setSelected(b); setForm({ ...b }); setModal('edit'); };
   const openView = (b) => { setSelected(b); setModal('view'); };
 
-  const handleSave = () => {
-    if (modal === 'add') {
-      setBuses(prev => [...prev, { ...form, id: Date.now(), driver: 'Unassigned', route: 'Unassigned', mileage: 0 }]);
-      toast.success('Bus added successfully!');
+  const handleSave = async () => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const payload = {
+        bus_number: form.busNumber,
+        registration_number: form.registration,
+        capacity: form.capacity,
+        status: form.status
+      };
+      if (modal === 'add') {
+        const res = await AdminAPI.addBus(payload);
+        if (res && res.success) { toast.success('Bus added!'); loadData(); }
+        else toast.error(res?.message || 'Failed to add');
+      } else {
+        const res = await AdminAPI.updateBus(selected.id, payload);
+        if (res && res.success) { toast.success('Bus updated!'); loadData(); }
+        else toast.error(res?.message || 'Failed to update');
+      }
     } else {
-      setBuses(prev => prev.map(b => b.id === selected.id ? { ...b, ...form } : b));
-      toast.success('Bus updated successfully!');
+      if (modal === 'add') {
+        setBuses(prev => [...prev, { ...form, id: Date.now(), driver: 'Unassigned', route: 'Unassigned', mileage: 0 }]);
+        toast.success('Bus added successfully!');
+      } else {
+        setBuses(prev => prev.map(b => b.id === selected.id ? { ...b, ...form } : b));
+        toast.success('Bus updated successfully!');
+      }
     }
     setModal(null);
   };
 
-  const handleDelete = (id) => {
-    setBuses(prev => prev.filter(b => b.id !== id));
-    toast.success('Bus removed.');
+  const handleDelete = async (id) => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const res = await AdminAPI.deleteBus(id);
+      if (res && res.success) { toast.success('Bus removed.'); loadData(); }
+      else toast.error(res?.message || 'Failed to remove');
+    } else {
+      setBuses(prev => prev.filter(b => b.id !== id));
+      toast.success('Bus removed.');
+    }
   };
 
   return (
@@ -58,9 +111,11 @@ export default function BusesPage() {
         title="Bus Management"
         subtitle={`${buses.length} buses in your fleet`}
         action={
-          <button onClick={openAdd} className="btn btn-primary">
-            <Plus size={16} /> Add Bus
-          </button>
+          isAdmin ? (
+            <button onClick={openAdd} className="btn btn-primary">
+              <Plus size={16} /> Add Bus
+            </button>
+          ) : null
         }
       />
 
@@ -127,12 +182,16 @@ export default function BusesPage() {
                       <button onClick={() => openView(bus)} className="p-1.5 rounded-lg text-[#8b949e] hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
                         <Eye size={14} />
                       </button>
-                      <button onClick={() => openEdit(bus)} className="p-1.5 rounded-lg text-[#8b949e] hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
-                        <Edit size={14} />
-                      </button>
-                      <button onClick={() => handleDelete(bus.id)} className="p-1.5 rounded-lg text-[#8b949e] hover:text-red-400 hover:bg-red-500/10 transition-colors">
-                        <Trash2 size={14} />
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button onClick={() => openEdit(bus)} className="p-1.5 rounded-lg text-[#8b949e] hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+                            <Edit size={14} />
+                          </button>
+                          <button onClick={() => handleDelete(bus.id)} className="p-1.5 rounded-lg text-[#8b949e] hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

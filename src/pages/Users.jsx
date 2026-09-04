@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, Plus, Edit, Trash2, Shield } from 'lucide-react';
 import { PageHeader, SectionCard, SearchBar, Modal, StatCard } from '../components/ui/SharedComponents';
+import { AdminAPI, USE_REAL_PHP_BACKEND } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const initialUsers = [
@@ -16,11 +18,35 @@ const ROLES = ['super_admin','transport_admin','driver','student'];
 const roleColors = { super_admin:'badge-primary', transport_admin:'badge-purple', driver:'badge-info', student:'badge-success' };
 
 export default function UsersPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'transport_admin';
+
   const [users, setUsers] = useState(initialUsers);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
+
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const res = await AdminAPI.getUsers();
+      if (res && res.success) {
+        setUsers(res.data.map(u => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          status: u.status || 'active',
+          joinDate: u.created_at ? u.created_at.slice(0, 10) : 'N/A',
+          dept: u.department || 'N/A',
+          phone: u.phone || '',
+          student_id: u.student_id || '',
+          license_number: u.license_number || ''
+        })));
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, []);
 
   const filtered = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -30,17 +56,49 @@ export default function UsersPage() {
 
   const openAdd = () => { setForm({ name:'', email:'', role:'student', status:'active', dept:'' }); setModal('add'); };
   const openEdit = (u) => { setSelected(u); setForm({ ...u }); setModal('edit'); };
-  const handleSave = () => {
-    if (modal === 'add') {
-      setUsers(p => [...p, { ...form, id: Date.now(), joinDate: new Date().toISOString().split('T')[0] }]);
-      toast.success('User added!');
+
+  const handleSave = async () => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const payload = {
+        name: form.name,
+        email: form.email,
+        role: form.role,
+        phone: form.phone || '',
+        department: form.dept,
+        status: form.status,
+        student_id: form.student_id || null,
+        license_number: form.license_number || null
+      };
+      if (modal === 'add') {
+        const res = await AdminAPI.addUser(payload);
+        if (res && res.success) { toast.success('User added!'); loadData(); }
+        else toast.error(res?.message || 'Failed to add');
+      } else {
+        const res = await AdminAPI.updateUser(selected.id, payload);
+        if (res && res.success) { toast.success('User updated!'); loadData(); }
+        else toast.error(res?.message || 'Failed to update');
+      }
     } else {
-      setUsers(p => p.map(u => u.id === selected.id ? { ...u, ...form } : u));
-      toast.success('User updated!');
+      if (modal === 'add') {
+        setUsers(p => [...p, { ...form, id: Date.now(), joinDate: new Date().toISOString().split('T')[0] }]);
+        toast.success('User added!');
+      } else {
+        setUsers(p => p.map(u => u.id === selected.id ? { ...u, ...form } : u));
+        toast.success('User updated!');
+      }
     }
     setModal(null);
   };
-  const handleDelete = (id) => { setUsers(p => p.filter(u => u.id !== id)); toast.success('User removed.'); };
+
+  const handleDelete = async (id) => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const res = await AdminAPI.deleteUser(id);
+      if (res && res.success) { toast.success('User removed.'); loadData(); }
+      else toast.error(res?.message || 'Failed to remove');
+    } else {
+      setUsers(p => p.filter(u => u.id !== id)); toast.success('User removed.');
+    }
+  };
 
   return (
     <div className="page-container p-6">

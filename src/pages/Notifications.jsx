@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { Bell, Bus, Wrench, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { PageHeader, SectionCard, StatCard } from '../components/ui/SharedComponents';
 import { mockNotifications } from '../data/mockData';
+import { AdminAPI, USE_REAL_PHP_BACKEND } from '../services/api';
 
 const typeConfig = {
   delay: { icon: Bus, color: 'text-yellow-400', bg: 'bg-yellow-500/15 border-yellow-500/30', label: 'Delay' },
@@ -10,7 +12,19 @@ const typeConfig = {
 };
 
 export default function NotificationsPage() {
-  const unread = mockNotifications.filter(n => !n.read).length;
+  const [notifications, setNotifications] = useState(mockNotifications);
+
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const res = await AdminAPI.getNotifications();
+      if (res && res.success) {
+        setNotifications(res.data);
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, []);
+
+  const unread = notifications.filter(n => !n.read).length;
 
   return (
     <div className="page-container p-6">
@@ -20,15 +34,15 @@ export default function NotificationsPage() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard icon={Bell} label="Total" value={mockNotifications.length} color="primary" />
+        <StatCard icon={Bell} label="Total" value={notifications.length} color="primary" />
         <StatCard icon={Bell} label="Unread" value={unread} color="warning" />
-        <StatCard icon={AlertCircle} label="Emergency" value={mockNotifications.filter(n=>n.type==='emergency').length} color="danger" />
-        <StatCard icon={CheckCircle} label="Read" value={mockNotifications.filter(n=>n.read).length} color="success" />
+        <StatCard icon={AlertCircle} label="Emergency" value={notifications.filter(n=>n.type==='emergency').length} color="danger" />
+        <StatCard icon={CheckCircle} label="Read" value={notifications.filter(n=>n.read).length} color="success" />
       </div>
 
       <SectionCard title="All Notifications">
         <div className="space-y-3">
-          {mockNotifications.map(n => {
+          {notifications.map(n => {
             const tc = typeConfig[n.type] || typeConfig.announcement;
             return (
               <div

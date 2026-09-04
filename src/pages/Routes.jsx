@@ -1,15 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, MapPin, Route } from 'lucide-react';
 import { PageHeader, SectionCard, SearchBar, Modal, StatCard } from '../components/ui/SharedComponents';
 import { mockRoutes, mockStops } from '../data/mockData';
+import { AdminAPI, USE_REAL_PHP_BACKEND } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function RoutesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'transport_admin';
+
   const [routes, setRoutes] = useState(mockRoutes);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
+
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const res = await AdminAPI.getRoutes();
+      if (res && res.success) {
+        setRoutes(res.data.map(r => ({
+          id: r.id,
+          name: r.route_name,
+          start: r.start_location,
+          destination: r.end_location,
+          distance: `${r.distance_km} km`,
+          time: `${r.estimated_minutes || 30} mins`,
+          status: r.status || 'active',
+          stops: r.stop_count || 0,
+          buses: 2,
+          students: 150
+        })));
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, []);
 
   const filtered = routes.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -18,24 +44,53 @@ export default function RoutesPage() {
 
   const openAdd = () => { setForm({ name:'', start:'', destination:'', stops: 0, distance:'', time:'', status:'active', buses: 0, students: 0 }); setModal('add'); };
   const openEdit = (r) => { setSelected(r); setForm({ ...r }); setModal('edit'); };
-  const handleSave = () => {
-    if (modal === 'add') {
-      setRoutes(prev => [...prev, { ...form, id: Date.now() }]);
-      toast.success('Route added!');
+  const handleSave = async () => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const payload = {
+        route_name: form.name,
+        start_location: form.start,
+        end_location: form.destination,
+        distance_km: parseFloat(form.distance) || 10,
+        estimated_minutes: parseInt(form.time) || 30,
+        status: form.status
+      };
+      if (modal === 'add') {
+        const res = await AdminAPI.addRoute(payload);
+        if (res && res.success) { toast.success('Route added!'); loadData(); }
+        else toast.error(res?.message || 'Failed to add');
+      } else {
+        const res = await AdminAPI.updateRoute(selected.id, payload);
+        if (res && res.success) { toast.success('Route updated!'); loadData(); }
+        else toast.error(res?.message || 'Failed to update');
+      }
     } else {
-      setRoutes(prev => prev.map(r => r.id === selected.id ? { ...r, ...form } : r));
-      toast.success('Route updated!');
+      if (modal === 'add') {
+        setRoutes(prev => [...prev, { ...form, id: Date.now() }]);
+        toast.success('Route added!');
+      } else {
+        setRoutes(prev => prev.map(r => r.id === selected.id ? { ...r, ...form } : r));
+        toast.success('Route updated!');
+      }
     }
     setModal(null);
   };
-  const handleDelete = (id) => { setRoutes(p => p.filter(r => r.id !== id)); toast.success('Route removed.'); };
+  
+  const handleDelete = async (id) => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const res = await AdminAPI.deleteRoute(id);
+      if (res && res.success) { toast.success('Route removed.'); loadData(); }
+      else toast.error(res?.message || 'Failed to remove');
+    } else {
+      setRoutes(p => p.filter(r => r.id !== id)); toast.success('Route removed.');
+    }
+  };
 
   return (
     <div className="page-container p-6">
       <PageHeader
         title="Route Management"
         subtitle={`${routes.length} routes configured`}
-        action={<button onClick={openAdd} className="btn btn-primary"><Plus size={16} /> Add Route</button>}
+        action={isAdmin ? <button onClick={openAdd} className="btn btn-primary"><Plus size={16} /> Add Route</button> : null}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -89,10 +144,12 @@ export default function RoutesPage() {
               </div>
             </div>
 
+            {isAdmin && (
             <div className="flex gap-2">
               <button onClick={() => openEdit(route)} className="btn btn-secondary btn-sm flex-1 justify-center"><Edit size={12} /> Edit</button>
               <button onClick={() => handleDelete(route.id)} className="btn btn-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171' }}><Trash2 size={12} /> Delete</button>
             </div>
+            )}
           </div>
         ))}
       </div>

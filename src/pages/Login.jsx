@@ -185,9 +185,6 @@ function LoginForm({ onSwitchToSignup }) {
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-[#64748b] text-center mt-3 font-mono">
-          Demo password: <code className="text-amber-400 font-bold">password</code>
-        </p>
       </div>
     </div>
   );
@@ -492,7 +489,7 @@ export default function LoginPage() {
             </div>
             <div>
               <div className="text-2xl font-extrabold text-white tracking-tight font-['Outfit'] flex items-center gap-2">
-                NSTU BUS TRACKER <Sparkles size={16} className="text-amber-400 animate-pulse" />
+                NSTU BUS MANAGEMENT <Sparkles size={16} className="text-amber-400 animate-pulse" />
               </div>
               <div className="text-xs text-amber-400/90 uppercase tracking-widest font-bold">Noakhali Science &amp; Technology University</div>
             </div>
@@ -577,7 +574,7 @@ export default function LoginPage() {
             <div className="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/30">
               <Bus size={28} className="text-slate-950" />
             </div>
-            <div className="text-2xl font-black text-white font-['Outfit']">NSTU Bus Tracker</div>
+            <div className="text-2xl font-black text-white font-['Outfit']">NSTU Bus Management</div>
             <div className="text-xs text-amber-400 font-semibold">University Transport Portal</div>
           </div>
 

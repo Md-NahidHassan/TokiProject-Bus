@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckSquare, Clock, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader, SectionCard, StatCard } from '../components/ui/SharedComponents';
 import { mockAttendance, mockStudents } from '../data/mockData';
+import { AdminAPI, USE_REAL_PHP_BACKEND } from '../services/api';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS_OF_WEEK = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -58,10 +59,23 @@ function CalendarView() {
 
 export default function AttendancePage() {
   const [view, setView] = useState('daily'); // daily | weekly | monthly
+  const [attendance, setAttendance] = useState(mockAttendance);
+  const [students, setStudents] = useState(mockStudents);
 
-  const presentCount = mockAttendance.filter(a => a.status === 'present').length;
-  const absentCount = mockAttendance.filter(a => a.status === 'absent').length;
-  const rate = Math.round((presentCount / mockAttendance.length) * 100);
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const res = await AdminAPI.getAttendance();
+      if (res && res.success) {
+        if (res.data && res.data.length > 0) setAttendance(res.data);
+        if (res.students && res.students.length > 0) setStudents(res.students);
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, []);
+
+  const presentCount = attendance.filter(a => a.status === 'present').length;
+  const absentCount = attendance.filter(a => a.status === 'absent').length;
+  const rate = attendance.length > 0 ? Math.round((presentCount / attendance.length) * 100) : 0;
 
   return (
     <div className="page-container p-6">
@@ -74,7 +88,7 @@ export default function AttendancePage() {
         <StatCard icon={CheckSquare} label="Present Today" value={presentCount} color="success" />
         <StatCard icon={XCircle} label="Absent Today" value={absentCount} color="danger" />
         <StatCard icon={CheckSquare} label="Attendance Rate" value={`${rate}%`} color="info" />
-        <StatCard icon={Clock} label="Total Students" value={mockStudents.length} color="primary" />
+        <StatCard icon={Clock} label="Total Students" value={students.length} color="primary" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -92,7 +106,7 @@ export default function AttendancePage() {
                   <tr><th>Student</th><th>Date</th><th>Bus</th><th>Morning In</th><th>Afternoon Out</th><th>Status</th></tr>
                 </thead>
                 <tbody>
-                  {mockAttendance.map((a, i) => (
+                  {attendance.map((a, i) => (
                     <tr key={i}>
                       <td className="font-medium text-white text-sm">{a.student}</td>
                       <td className="text-xs text-[#8b949e]">{a.date}</td>
@@ -135,8 +149,8 @@ export default function AttendancePage() {
               <tr><th>Student</th><th>Department</th><th>Bus</th><th>Present</th><th>Absent</th><th>Rate</th><th>Status</th></tr>
             </thead>
             <tbody>
-              {mockStudents.map(s => {
-                const absent = Math.round(100 - s.attendance);
+              {students.map(s => {
+                const absent = Math.round(100 - (s.attendance || 0));
                 return (
                   <tr key={s.id}>
                     <td>

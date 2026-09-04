@@ -61,5 +61,35 @@ if ($method === 'POST') {
     exit();
 }
 
+if ($method === 'PUT') {
+    $id = isset($_GET['id']) ? intval($_GET['id']) : (isset($data['id']) ? intval($data['id']) : 0);
+    if (!$id) { http_response_code(400); echo json_encode(["success" => false, "message" => "Missing ID"]); exit; }
+    
+    $route_name = isset($data['route_name']) ? trim($data['route_name']) : '';
+    $start_location = isset($data['start_location']) ? trim($data['start_location']) : '';
+    $end_location = isset($data['end_location']) ? trim($data['end_location']) : '';
+    $distance_km = isset($data['distance_km']) ? floatval($data['distance_km']) : 10.0;
+    $status = isset($data['status']) ? trim($data['status']) : 'active';
+
+    try {
+        $stmt = $pdo->prepare("UPDATE routes SET route_name=?, start_location=?, end_location=?, distance_km=?, status=? WHERE id=?");
+        $stmt->execute([$route_name, $start_location, $end_location, $distance_km, $status, $id]);
+        echo json_encode(["success" => true, "message" => "Route updated successfully."]);
+    } catch (PDOException $e) {
+        http_response_code(500); echo json_encode(["success" => false, "message" => "Update failed: " . $e->getMessage()]);
+    }
+    exit();
+}
+
+if ($method === 'DELETE') {
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    try {
+        $stmt = $pdo->prepare("DELETE FROM routes WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(["success" => true, "message" => "Route deleted"]);
+    } catch(Exception $e) { echo json_encode(["success" => false, "message" => "Delete failed"]); }
+    exit();
+}
+
 http_response_code(405);
 echo json_encode(["success" => false, "message" => "Method Not Allowed."]);

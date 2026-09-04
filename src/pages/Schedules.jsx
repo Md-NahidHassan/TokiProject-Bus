@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Calendar, Clock, Sun, Sunset, Moon } from 'lucide-react';
 import { PageHeader, SectionCard, Modal, StatCard } from '../components/ui/SharedComponents';
 import { mockSchedules } from '../data/mockData';
+import { AdminAPI, StudentAPI, USE_REAL_PHP_BACKEND } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -13,6 +15,9 @@ const typeConfig = {
 };
 
 export default function SchedulesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'transport_admin';
+
   const [schedules, setSchedules] = useState(mockSchedules);
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(null);
@@ -21,22 +26,66 @@ export default function SchedulesPage() {
 
   const filtered = schedules.filter(s => filter === 'all' || s.type === filter);
 
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const res = isAdmin ? await AdminAPI.getSchedules() : await StudentAPI.getSchedules();
+      if (res && res.success) {
+        // Map backend student schedules structure to UI expected structure if it's from student endpoint
+        const data = isAdmin ? res.data : res.data.map(s => ({
+          id: s.id,
+          bus: s.bus || 'Unknown',
+          driver: s.driver || 'Unknown',
+          route: s.route || 'Unknown',
+          departure: s.departure_time ? s.departure_time.slice(0,5) + ' AM' : '08:00 AM', // Simple fallback mapping
+          arrival: s.arrival_time ? s.arrival_time.slice(0,5) + ' AM' : '-',
+          type: s.shift || 'morning',
+          days: s.day_type === 'weekend' ? ['Fri', 'Sat'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu'],
+          status: s.schedule_status || s.status
+        }));
+        setSchedules(data);
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, [isAdmin]);
+
   const openAdd = () => {
     setForm({ bus:'', driver:'', route:'', departure:'', arrival:'', type:'morning', days:['Mon','Tue','Wed','Thu','Fri'], status:'active' });
     setModal('add');
   };
   const openEdit = (s) => { setSelected(s); setForm({ ...s, days: [...s.days] }); setModal('edit'); };
-  const handleSave = () => {
-    if (modal === 'add') {
-      setSchedules(p => [...p, { ...form, id: Date.now() }]);
-      toast.success('Schedule added!');
+
+  const handleSave = async () => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      if (modal === 'add') {
+        const res = await AdminAPI.addSchedule(form);
+        if (res && res.success) { toast.success('Schedule added!'); loadData(); }
+        else { toast.error(res?.message || 'Failed to add'); }
+      } else {
+        const res = await AdminAPI.updateSchedule(selected.id, form);
+        if (res && res.success) { toast.success('Schedule updated!'); loadData(); }
+        else { toast.error(res?.message || 'Failed to update'); }
+      }
     } else {
-      setSchedules(p => p.map(s => s.id === selected.id ? { ...s, ...form } : s));
-      toast.success('Schedule updated!');
+      if (modal === 'add') {
+        setSchedules(p => [...p, { ...form, id: Date.now() }]);
+        toast.success('Schedule added!');
+      } else {
+        setSchedules(p => p.map(s => s.id === selected.id ? { ...s, ...form } : s));
+        toast.success('Schedule updated!');
+      }
     }
     setModal(null);
   };
-  const handleDelete = (id) => { setSchedules(p => p.filter(s => s.id !== id)); toast.success('Schedule removed.'); };
+
+  const handleDelete = async (id) => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const res = await AdminAPI.deleteSchedule(id);
+      if (res && res.success) { toast.success('Schedule removed.'); loadData(); }
+      else { toast.error(res?.message || 'Failed to remove'); }
+    } else {
+      setSchedules(p => p.filter(s => s.id !== id)); toast.success('Schedule removed.');
+    }
+  };
 
   const toggleDay = (day) => {
     setForm(p => ({
@@ -50,7 +99,7 @@ export default function SchedulesPage() {
       <PageHeader
         title="Schedule Management"
         subtitle={`${schedules.length} schedules configured`}
-        action={<button onClick={openAdd} className="btn btn-primary"><Plus size={16} /> Add Schedule</button>}
+        action={isAdmin ? <button onClick={openAdd} className="btn btn-primary"><Plus size={16} /> Add Schedule</button> : null}
       />
 
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -91,10 +140,12 @@ export default function SchedulesPage() {
                     <div className="text-xs text-[#8b949e]">{s.driver}</div>
                   </div>
                 </div>
+                {isAdmin && (
                 <div className="flex items-center gap-1">
                   <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-[#8b949e] hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Edit size={14} /></button>
                   <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded-lg text-[#8b949e] hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 size={14} /></button>
                 </div>
+                )}
               </div>
 
               <div className="text-xs text-[#8b949e] mb-3">{s.route}</div>

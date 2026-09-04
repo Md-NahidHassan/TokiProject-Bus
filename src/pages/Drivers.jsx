@@ -1,15 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, Star, UserCheck } from 'lucide-react';
 import { PageHeader, SectionCard, SearchBar, Modal, StatCard } from '../components/ui/SharedComponents';
 import { mockDrivers } from '../data/mockData';
+import { AdminAPI, USE_REAL_PHP_BACKEND } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function DriversPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'transport_admin';
+
   const [drivers, setDrivers] = useState(mockDrivers);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
+
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const res = await AdminAPI.getDrivers();
+      if (res && res.success) {
+        setDrivers(res.data.map(d => ({
+          id: d.id,
+          name: d.name,
+          license: d.license_number || 'N/A',
+          phone: d.phone || 'N/A',
+          bus: 'Unassigned',
+          route: 'Unassigned',
+          experience: 'N/A',
+          status: d.status || 'active',
+          totalTrips: 0,
+          rating: 4.5,
+          joinDate: d.created_at ? d.created_at.slice(0, 10) : 'N/A'
+        })));
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, []);
 
   const filtered = drivers.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -20,18 +47,46 @@ export default function DriversPage() {
   const openEdit = (d) => { setSelected(d); setForm({ ...d }); setModal('edit'); };
   const openView = (d) => { setSelected(d); setModal('view'); };
 
-  const handleSave = () => {
-    if (modal === 'add') {
-      setDrivers(prev => [...prev, { ...form, id: Date.now(), totalTrips: 0, rating: 0, joinDate: new Date().toISOString().split('T')[0] }]);
-      toast.success('Driver added!');
+  const handleSave = async () => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const payload = {
+        name: form.name,
+        email: form.email || `${form.name.replace(/\s+/g, '.').toLowerCase()}@nstu.edu.bd`,
+        role: 'driver',
+        phone: form.phone,
+        license_number: form.license,
+        status: form.status
+      };
+      if (modal === 'add') {
+        const res = await AdminAPI.addUser(payload);
+        if (res && res.success) { toast.success('Driver added!'); loadData(); }
+        else toast.error(res?.message || 'Failed to add');
+      } else {
+        const res = await AdminAPI.updateUser(selected.id, payload);
+        if (res && res.success) { toast.success('Driver updated!'); loadData(); }
+        else toast.error(res?.message || 'Failed to update');
+      }
     } else {
-      setDrivers(prev => prev.map(d => d.id === selected.id ? { ...d, ...form } : d));
-      toast.success('Driver updated!');
+      if (modal === 'add') {
+        setDrivers(prev => [...prev, { ...form, id: Date.now(), totalTrips: 0, rating: 0, joinDate: new Date().toISOString().split('T')[0] }]);
+        toast.success('Driver added!');
+      } else {
+        setDrivers(prev => prev.map(d => d.id === selected.id ? { ...d, ...form } : d));
+        toast.success('Driver updated!');
+      }
     }
     setModal(null);
   };
 
-  const handleDelete = (id) => { setDrivers(prev => prev.filter(d => d.id !== id)); toast.success('Driver removed.'); };
+  const handleDelete = async (id) => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const res = await AdminAPI.deleteUser(id);
+      if (res && res.success) { toast.success('Driver removed.'); loadData(); }
+      else toast.error(res?.message || 'Failed to remove');
+    } else {
+      setDrivers(prev => prev.filter(d => d.id !== id)); toast.success('Driver removed.');
+    }
+  };
 
   return (
     <div className="page-container p-6">

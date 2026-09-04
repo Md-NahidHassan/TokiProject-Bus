@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Send, Plus, MessageSquare, CheckCircle, Clock, AlertCircle, Trash2 } from 'lucide-react';
 import { PageHeader, SectionCard, Modal, StatCard } from '../components/ui/SharedComponents';
 import { mockComplaints } from '../data/mockData';
+import { AdminAPI, StudentAPI, USE_REAL_PHP_BACKEND } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -16,37 +17,72 @@ export default function ComplaintsPage() {
 
   const isAdmin = user?.role === 'super_admin' || user?.role === 'transport_admin';
 
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      if (isAdmin) {
+        const res = await AdminAPI.getComplaints();
+        if (res && res.success) {
+          setComplaints(res.data.map(c => ({
+            id: c.id,
+            student: c.student_name,
+            studentId: c.department || 'Unknown',
+            type: c.category || c.subject || 'General',
+            description: c.description,
+            date: c.created_at ? c.created_at.slice(0, 10) : '',
+            status: c.status || 'pending',
+            priority: 'medium', // Defaulting as backend doesn't have it
+            reply: c.reply || ''
+          })));
+        }
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, [isAdmin]);
+
   const filtered = complaints.filter(c => filter === 'all' || c.status === filter);
 
-  const submitComplaint = () => {
-    setComplaints(p => [...p, {
-      id: Date.now(),
-      student: user?.name,
-      studentId: user?.studentId || 'CSE-2020-001',
-      type: form.type,
-      description: form.description,
-      date: new Date().toISOString().split('T')[0],
-      status: 'pending',
-      priority: form.priority,
-      reply: ''
-    }]);
-    toast.success('Complaint submitted successfully!');
+  const submitComplaint = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const payload = {
+        user_id: user?.id,
+        category: form.type,
+        subject: form.type,
+        description: form.description
+      };
+      const res = await StudentAPI.submitComplaint(payload);
+      if (res && res.success) { toast.success('Complaint submitted successfully!'); loadData(); }
+      else toast.error(res?.message || 'Failed to submit');
+    } else {
+      setComplaints(p => [...p, { id: Date.now(), student: user?.name, studentId: user?.studentId || 'CSE-2020-001', type: form.type, description: form.description, date: new Date().toISOString().split('T')[0], status: 'pending', priority: form.priority, reply: '' }]);
+      toast.success('Complaint submitted successfully!');
+    }
     setModal(null);
     setForm({ type: '', description: '', priority: 'medium' });
   };
 
-  const sendReply = () => {
-    setComplaints(p => p.map(c =>
-      c.id === selected.id ? { ...c, reply, status: 'resolved' } : c
-    ));
-    toast.success('Reply sent & complaint resolved!');
+  const sendReply = async () => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      // Assuming manage_complaints.php PUTs to reply or something. For now just updating status:
+      const res = await AdminAPI.updateComplaintStatus({ complaint_id: selected.id, status: 'resolved', reply: reply });
+      if (res && res.success) { toast.success('Reply sent & complaint resolved!'); loadData(); }
+      else toast.error(res?.message || 'Failed to update');
+    } else {
+      setComplaints(p => p.map(c => c.id === selected.id ? { ...c, reply, status: 'resolved' } : c));
+      toast.success('Reply sent & complaint resolved!');
+    }
     setModal(null);
     setReply('');
   };
 
-  const updateStatus = (id, status) => {
-    setComplaints(p => p.map(c => c.id === id ? { ...c, status } : c));
-    toast.success(`Status updated to ${status}`);
+  const updateStatus = async (id, status) => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const res = await AdminAPI.updateComplaintStatus({ complaint_id: id, status });
+      if (res && res.success) { toast.success(`Status updated to ${status}`); loadData(); }
+      else toast.error(res?.message || 'Failed to update');
+    } else {
+      setComplaints(p => p.map(c => c.id === id ? { ...c, status } : c));
+      toast.success(`Status updated to ${status}`);
+    }
   };
 
   const priorityColors = { high: 'badge-danger', medium: 'badge-warning', low: 'badge-info' };

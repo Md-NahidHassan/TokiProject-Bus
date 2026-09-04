@@ -71,5 +71,42 @@ if ($method === 'POST') {
     exit();
 }
 
+if ($method === 'PUT') {
+    $data = json_decode(file_get_contents("php://input"), true);
+    $id = isset($_GET['id']) ? intval($_GET['id']) : (isset($data['id']) ? intval($data['id']) : 0);
+    if (!$id) { http_response_code(400); echo json_encode(["success" => false, "message" => "Missing ID"]); exit; }
+
+    $name = $data['name'] ?? '';
+    $email = $data['email'] ?? '';
+    $role = $data['role'] ?? 'student';
+    $phone = $data['phone'] ?? '';
+    $department = $data['department'] ?? '';
+    $status = $data['status'] ?? 'active';
+    $student_id = $data['student_id'] ?? null;
+    $license_number = $data['license_number'] ?? null;
+
+    try {
+        $stmt = $pdo->prepare("UPDATE users SET name=?, email=?, role=?, phone=?, department=?, student_id=?, license_number=?, status=? WHERE id=?");
+        $stmt->execute([$name, $email, $role, $phone, $department, $student_id, $license_number, $status, $id]);
+        echo json_encode(["success" => true, "message" => "User updated."]);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    }
+    exit();
+}
+
+if ($method === 'DELETE') {
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    try {
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(["success" => true, "message" => "User deleted."]);
+    } catch (Exception $e) {
+        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    }
+    exit();
+}
+
 http_response_code(405);
 echo json_encode(["success" => false, "message" => "Method Not Allowed."]);

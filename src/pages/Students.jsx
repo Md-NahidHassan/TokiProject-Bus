@@ -1,15 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, BookUser, Phone } from 'lucide-react';
 import { PageHeader, SectionCard, SearchBar, Modal, StatCard } from '../components/ui/SharedComponents';
 import { mockStudents } from '../data/mockData';
+import { AdminAPI, USE_REAL_PHP_BACKEND } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function StudentsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'transport_admin';
+
   const [students, setStudents] = useState(mockStudents);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
+
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const res = await AdminAPI.getStudents();
+      if (res && res.success) {
+        setStudents(res.data.map(s => ({
+          id: s.id,
+          name: s.name,
+          studentId: s.student_id || 'N/A',
+          dept: s.department || 'N/A',
+          semester: 'N/A',
+          bus: 'Unassigned',
+          route: 'N/A',
+          stop: 'N/A',
+          phone: s.phone || 'N/A',
+          status: s.status || 'active',
+          attendance: 85,
+          email: s.email
+        })));
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, []);
 
   const filtered = students.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -21,18 +49,47 @@ export default function StudentsPage() {
   const openEdit = (s) => { setSelected(s); setForm({ ...s }); setModal('edit'); };
   const openView = (s) => { setSelected(s); setModal('view'); };
 
-  const handleSave = () => {
-    if (modal === 'add') {
-      setStudents(prev => [...prev, { ...form, id: Date.now(), attendance: 0 }]);
-      toast.success('Student added!');
+  const handleSave = async () => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const payload = {
+        name: form.name,
+        email: form.email || `${form.studentId || 'student'}@nstu.edu.bd`,
+        role: 'student',
+        phone: form.phone,
+        department: form.dept,
+        student_id: form.studentId,
+        status: form.status
+      };
+      if (modal === 'add') {
+        const res = await AdminAPI.addUser(payload);
+        if (res && res.success) { toast.success('Student added!'); loadData(); }
+        else toast.error(res?.message || 'Failed to add');
+      } else {
+        const res = await AdminAPI.updateUser(selected.id, payload);
+        if (res && res.success) { toast.success('Student updated!'); loadData(); }
+        else toast.error(res?.message || 'Failed to update');
+      }
     } else {
-      setStudents(prev => prev.map(s => s.id === selected.id ? { ...s, ...form } : s));
-      toast.success('Student updated!');
+      if (modal === 'add') {
+        setStudents(prev => [...prev, { ...form, id: Date.now(), attendance: 0 }]);
+        toast.success('Student added!');
+      } else {
+        setStudents(prev => prev.map(s => s.id === selected.id ? { ...s, ...form } : s));
+        toast.success('Student updated!');
+      }
     }
     setModal(null);
   };
 
-  const handleDelete = (id) => { setStudents(prev => prev.filter(s => s.id !== id)); toast.success('Student removed.'); };
+  const handleDelete = async (id) => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const res = await AdminAPI.deleteUser(id);
+      if (res && res.success) { toast.success('Student removed.'); loadData(); }
+      else toast.error(res?.message || 'Failed to remove');
+    } else {
+      setStudents(prev => prev.filter(s => s.id !== id)); toast.success('Student removed.');
+    }
+  };
 
   return (
     <div className="page-container p-6">

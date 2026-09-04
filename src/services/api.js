@@ -65,10 +65,36 @@ export const AdminAPI = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+  updateBus: (id, data) => fetchAPI(`/api/admin/manage_buses.php?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  deleteBus: (id) => fetchAPI(`/api/admin/manage_buses.php?id=${id}`, {
+    method: 'DELETE',
+  }),
   getRoutes: () => fetchAPI('/api/admin/manage_routes.php'),
   addRoute: (data) => fetchAPI('/api/admin/manage_routes.php', {
     method: 'POST',
     body: JSON.stringify(data),
+  }),
+  updateRoute: (id, data) => fetchAPI(`/api/admin/manage_routes.php?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  deleteRoute: (id) => fetchAPI(`/api/admin/manage_routes.php?id=${id}`, {
+    method: 'DELETE',
+  }),
+  getStops: () => fetchAPI('/api/admin/manage_stops.php'),
+  addStop: (data) => fetchAPI('/api/admin/manage_stops.php', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  updateStop: (id, data) => fetchAPI(`/api/admin/manage_stops.php?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  deleteStop: (id) => fetchAPI(`/api/admin/manage_stops.php?id=${id}`, {
+    method: 'DELETE',
   }),
   getUsers: (role = '') => fetchAPI(`/api/admin/manage_users.php?role=${role}`),
   addUser: (data) => fetchAPI('/api/admin/manage_users.php', {
@@ -80,6 +106,36 @@ export const AdminAPI = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+  getSchedules: () => fetchAPI('/api/admin/manage_schedules.php'),
+  addSchedule: (data) => fetchAPI('/api/admin/manage_schedules.php', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  updateSchedule: (id, data) => fetchAPI(`/api/admin/manage_schedules.php?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  deleteSchedule: (id) => fetchAPI(`/api/admin/manage_schedules.php?id=${id}`, {
+    method: 'DELETE',
+  }),
+  getNotifications: () => fetchAPI('/api/admin/manage_notifications.php'),
+  addNotification: (data) => fetchAPI('/api/admin/manage_notifications.php', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  deleteNotification: (id) => fetchAPI(`/api/admin/manage_notifications.php?id=${id}`, {
+    method: 'DELETE',
+  }),
+  getAttendance: () => fetchAPI('/api/admin/manage_attendance.php'),
+  getDrivers: () => fetchAPI('/api/admin/manage_users.php?role=driver'),
+  getStudents: () => fetchAPI('/api/admin/manage_users.php?role=student'),
+  updateUser: (id, data) => fetchAPI(`/api/admin/manage_users.php?id=${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  deleteUser: (id) => fetchAPI(`/api/admin/manage_users.php?id=${id}`, {
+    method: 'DELETE',
+  }),
 };
 
 // Auth API Services
@@ -87,6 +143,10 @@ export const AuthAPI = {
   login: (credentials) => fetchAPI('/api/auth/login.php', {
     method: 'POST',
     body: JSON.stringify(credentials),
+  }),
+  signup: (userData) => fetchAPI('/api/auth/signup.php', {
+    method: 'POST',
+    body: JSON.stringify(userData),
   }),
 };
 

@@ -12,19 +12,19 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Read raw JSON input
 $data = json_decode(file_get_contents("php://input"), true);
 
-$email = isset($data['email']) ? trim($data['email']) : '';
+$identifier = isset($data['email']) ? trim($data['email']) : (isset($data['identifier']) ? trim($data['identifier']) : '');
 $password = isset($data['password']) ? trim($data['password']) : '';
 
-if (empty($email) || empty($password)) {
+if (empty($identifier) || empty($password)) {
     http_response_code(400);
-    echo json_encode(["success" => false, "message" => "Email and Password are required."]);
+    echo json_encode(["success" => false, "message" => "Identifier (Email/Phone/Student ID) and Password are required."]);
     exit();
 }
 
 try {
-    // Find user by email
-    $stmt = $pdo->prepare("SELECT id, name, email, password, role, phone, department, student_id, license_number, avatar, status FROM users WHERE email = :email LIMIT 1");
-    $stmt->execute(['email' => $email]);
+    // Find user by email, phone, or student_id
+    $stmt = $pdo->prepare("SELECT id, name, email, password, role, phone, department, student_id, license_number, avatar, status FROM users WHERE (email = :identifier AND email != '') OR (phone = :identifier AND phone != '') OR (student_id = :identifier AND student_id != '') LIMIT 1");
+    $stmt->execute(['identifier' => $identifier]);
     $user = $stmt->fetch();
 
     // Verification check (For demo, also support password check or fallback demo logic)

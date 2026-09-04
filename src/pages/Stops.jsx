@@ -1,15 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, MapPin, Search } from 'lucide-react';
 import { PageHeader, SectionCard, SearchBar, Modal, StatCard } from '../components/ui/SharedComponents';
 import { mockStops } from '../data/mockData';
+import { AdminAPI, USE_REAL_PHP_BACKEND } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function StopsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'transport_admin';
+
   const [stops, setStops] = useState(mockStops);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
+
+  const loadData = async () => {
+    if (USE_REAL_PHP_BACKEND) {
+      const res = await AdminAPI.getStops();
+      if (res && res.success) {
+        setStops(res.data);
+      }
+    }
+  };
+  useEffect(() => { loadData(); }, []);
 
   const filtered = stops.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -19,25 +34,53 @@ export default function StopsPage() {
   const openAdd = () => { setForm({ name:'', route:'', lat:'', lng:'', order:'', arrival:'' }); setModal('add'); };
   const openEdit = (s) => { setSelected(s); setForm({ ...s }); setModal('edit'); };
   
-  const handleSave = () => {
-    if (modal === 'add') {
-      setStops(p => [...p, { ...form, id: Date.now(), lat: Number(form.lat||0), lng: Number(form.lng||0), order: Number(form.order||0) }]);
-      toast.success('Bus stop added!');
+  const handleSave = async () => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const payload = {
+        stop_name: form.name,
+        route: form.route,
+        order: Number(form.order || 1),
+        latitude: Number(form.lat || 0),
+        longitude: Number(form.lng || 0),
+        arrival_time: form.arrival || null
+      };
+      if (modal === 'add') {
+        const res = await AdminAPI.addStop(payload);
+        if (res && res.success) { toast.success('Bus stop added!'); loadData(); }
+        else toast.error(res?.message || 'Failed to add');
+      } else {
+        const res = await AdminAPI.updateStop(selected.id, payload);
+        if (res && res.success) { toast.success('Bus stop updated!'); loadData(); }
+        else toast.error(res?.message || 'Failed to update');
+      }
     } else {
-      setStops(p => p.map(s => s.id === selected.id ? { ...s, ...form, lat: Number(form.lat||0), lng: Number(form.lng||0), order: Number(form.order||0) } : s));
-      toast.success('Bus stop updated!');
+      if (modal === 'add') {
+        setStops(p => [...p, { ...form, id: Date.now(), lat: Number(form.lat||0), lng: Number(form.lng||0), order: Number(form.order||0) }]);
+        toast.success('Bus stop added!');
+      } else {
+        setStops(p => p.map(s => s.id === selected.id ? { ...s, ...form, lat: Number(form.lat||0), lng: Number(form.lng||0), order: Number(form.order||0) } : s));
+        toast.success('Bus stop updated!');
+      }
     }
     setModal(null);
   };
   
-  const handleDelete = (id) => { setStops(p => p.filter(s => s.id !== id)); toast.success('Bus stop removed.'); };
+  const handleDelete = async (id) => {
+    if (USE_REAL_PHP_BACKEND && isAdmin) {
+      const res = await AdminAPI.deleteStop(id);
+      if (res && res.success) { toast.success('Bus stop removed.'); loadData(); }
+      else toast.error(res?.message || 'Failed to delete');
+    } else {
+      setStops(p => p.filter(s => s.id !== id)); toast.success('Bus stop removed.');
+    }
+  };
 
   return (
     <div className="page-container p-6">
       <PageHeader
         title="Bus Stop Management"
         subtitle={`${stops.length} physical stops configured across all routes`}
-        action={<button onClick={openAdd} className="btn btn-primary"><Plus size={16} /> Add Stop</button>}
+        action={isAdmin ? <button onClick={openAdd} className="btn btn-primary"><Plus size={16} /> Add Stop</button> : null}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -73,10 +116,12 @@ export default function StopsPage() {
                     {Number(s.lat).toFixed(4)}, {Number(s.lng).toFixed(4)}
                   </td>
                   <td>
+                    {isAdmin && (
                     <div className="flex gap-1">
                       <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-[#8b949e] hover:text-amber-400 hover:bg-amber-500/10 transition-colors"><Edit size={14} /></button>
                       <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded-lg text-[#8b949e] hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 size={14} /></button>
                     </div>
+                    )}
                   </td>
                 </tr>
               ))}

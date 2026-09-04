@@ -75,5 +75,36 @@ if ($method === 'POST') {
     exit();
 }
 
+if ($method === 'PUT') {
+    $id = isset($_GET['id']) ? intval($_GET['id']) : (isset($data['id']) ? intval($data['id']) : 0);
+    if (!$id) { http_response_code(400); echo json_encode(["success" => false, "message" => "Missing ID"]); exit; }
+    
+    $bus_number = isset($data['bus_number']) ? trim($data['bus_number']) : '';
+    $registration_number = isset($data['registration_number']) ? trim($data['registration_number']) : '';
+    $capacity = isset($data['capacity']) ? intval($data['capacity']) : 52;
+    $driver_id = !empty($data['driver_id']) ? intval($data['driver_id']) : null;
+    $route_id = !empty($data['route_id']) ? intval($data['route_id']) : null;
+    $status = isset($data['status']) ? trim($data['status']) : 'active';
+
+    try {
+        $stmt = $pdo->prepare("UPDATE buses SET bus_number=?, registration_number=?, capacity=?, driver_id=?, route_id=?, status=? WHERE id=?");
+        $stmt->execute([$bus_number, $registration_number, $capacity, $driver_id, $route_id, $status, $id]);
+        echo json_encode(["success" => true, "message" => "Bus updated successfully."]);
+    } catch (PDOException $e) {
+        http_response_code(500); echo json_encode(["success" => false, "message" => "Update failed: " . $e->getMessage()]);
+    }
+    exit();
+}
+
+if ($method === 'DELETE') {
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    try {
+        $stmt = $pdo->prepare("DELETE FROM buses WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(["success" => true, "message" => "Bus deleted"]);
+    } catch(Exception $e) { echo json_encode(["success" => false, "message" => "Delete failed"]); }
+    exit();
+}
+
 http_response_code(405);
 echo json_encode(["success" => false, "message" => "Method Not Allowed."]);

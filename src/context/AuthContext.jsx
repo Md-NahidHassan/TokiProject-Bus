@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { AuthAPI, USE_REAL_PHP_BACKEND } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -107,6 +108,25 @@ export function AuthProvider({ children }) {
    */
   const login = async (identifier, password, role = null) => {
     setLoading(true);
+
+    if (USE_REAL_PHP_BACKEND && !role) {
+      try {
+        const res = await AuthAPI.login({ identifier, password });
+        if (res && res.success) {
+          setUser(res.user);
+          saveSession(res.user);
+          setLoading(false);
+          return { success: true };
+        } else {
+          setLoading(false);
+          return { success: false, error: res?.message || 'Login failed' };
+        }
+      } catch (e) {
+        setLoading(false);
+        return { success: false, error: 'Network error during login' };
+      }
+    }
+
     await new Promise(r => setTimeout(r, 700));
 
     const users = loadUsers();
@@ -169,6 +189,25 @@ export function AuthProvider({ children }) {
    */
   const signup = async ({ name, email, phone, studentId, password, role, department }) => {
     setLoading(true);
+
+    if (USE_REAL_PHP_BACKEND) {
+      try {
+        const res = await AuthAPI.signup({ name, email, phone, studentId, password, role, department });
+        if (res && res.success) {
+          setUser(res.user);
+          saveSession(res.user);
+          setLoading(false);
+          return { success: true };
+        } else {
+          setLoading(false);
+          return { success: false, error: res?.message || 'Registration failed' };
+        }
+      } catch (e) {
+        setLoading(false);
+        return { success: false, error: 'Network error during registration' };
+      }
+    }
+
     await new Promise(r => setTimeout(r, 800));
 
     const users = loadUsers();

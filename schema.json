@@ -1,0 +1,66 @@
+[
+    {
+        "Field": "id",
+        "Type": "int(11)",
+        "Null": "NO",
+        "Key": "PRI",
+        "Default": null,
+        "Extra": "auto_increment"
+    },
+    {
+        "Field": "bus_id",
+        "Type": "int(11)",
+        "Null": "NO",
+        "Key": "MUL",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "route_id",
+        "Type": "int(11)",
+        "Null": "NO",
+        "Key": "MUL",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "departure_time",
+        "Type": "time",
+        "Null": "NO",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "arrival_time",
+        "Type": "time",
+        "Null": "NO",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "shift",
+        "Type": "enum('morning','afternoon','evening')",
+        "Null": "NO",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    {
+        "Field": "day_type",
+        "Type": "enum('regular','weekend','exam')",
+        "Null": "YES",
+        "Key": "",
+        "Default": "regular",
+        "Extra": ""
+    },
+    {
+        "Field": "status",
+        "Type": "enum('scheduled','in_transit','completed','cancelled')",
+        "Null": "YES",
+        "Key": "",
+        "Default": "scheduled",
+        "Extra": ""
+    }
+]
