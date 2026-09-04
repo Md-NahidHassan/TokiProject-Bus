@@ -363,6 +363,23 @@
     box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25), 0 0 20px rgba(245, 158, 11, 0.15);
     background: rgba(15, 23, 42, 0.95);
   }
+  .form-input optgroup {
+    background-color: #0f172a;
+    color: #f59e0b;
+    font-weight: 700;
+  }
+  .form-input option {
+    background-color: #0a1020;
+    color: #f8fafc;
+  }
+  body.light-mode .form-input optgroup {
+    background-color: #f1f5f9;
+    color: #b45309;
+  }
+  body.light-mode .form-input option {
+    background-color: #ffffff;
+    color: #0f172a;
+  }
   .form-input::placeholder {
     color: #64748b;
   }

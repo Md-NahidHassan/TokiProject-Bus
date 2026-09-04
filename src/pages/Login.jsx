@@ -5,9 +5,10 @@ import { useTheme } from '../context/ThemeContext';
 import {
   Bus, Eye, EyeOff, LogIn, ShieldCheck, Loader2, Sparkles,
   Navigation, Clock, Activity, CheckCircle2, Sun, Moon,
-  UserPlus, Mail, Phone, Hash, User, ChevronRight, ArrowLeft
+  UserPlus, Mail, Phone, Hash, User, ChevronRight, ArrowLeft, University
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { FACULTY_DEPARTMENTS, DEFAULT_DEPARTMENT } from '../data/departments';
 
 // ─── Quick Demo Role Buttons ─────────────────────────────────────
 const demoRoles = [
@@ -15,18 +16,6 @@ const demoRoles = [
   { key: 'transport_admin', label: 'Transport Admin', email: 'transport@nstu.edu.bd', roleName: 'Fleet Manager',     color: 'from-blue-600 to-indigo-700' },
   { key: 'driver',          label: 'Bus Driver',      email: 'driver@nstu.edu.bd',    roleName: 'Route Operator',   color: 'from-emerald-600 to-teal-700' },
   { key: 'student',         label: 'Student Rider',   email: 'student@nstu.edu.bd',   roleName: 'Pass Holder',      color: 'from-purple-600 to-pink-700' },
-];
-
-const DEPARTMENTS = [
-  'Computer Science & Engineering',
-  'Electrical & Electronic Engineering',
-  'Civil Engineering',
-  'Business Administration',
-  'Pharmacy',
-  'Fisheries & Marine Science',
-  'Transport Department',
-  'Administration',
-  'Other',
 ];
 
 // ─── Login Form ───────────────────────────────────────────────────
@@ -198,7 +187,7 @@ function SignupForm({ onSwitchToLogin }) {
   const [step,  setStep]  = useState(1); // step 1: info, step 2: password
   const [form,  setForm]  = useState({
     name: '', email: '', phone: '', studentId: '',
-    role: 'student', department: 'Computer Science & Engineering',
+    role: 'student', department: DEFAULT_DEPARTMENT,
     password: '', confirmPassword: '',
   });
   const [showPass, setShowPass]    = useState(false);
@@ -305,26 +294,13 @@ function SignupForm({ onSwitchToLogin }) {
             />
           </div>
 
-          {/* Student ID */}
-          <div>
-            <label className="form-label flex items-center gap-1.5">
-              <Hash size={11} className="text-amber-400" /> Student ID
-              <span className="text-[#64748b] normal-case font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={form.studentId}
-              onChange={set('studentId')}
-              className="form-input"
-              placeholder="e.g. CSE-2022-045"
-            />
-          </div>
-
-          {/* Role + Department in 2 cols */}
+          {/* Role + Student ID (2 cols) */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Role</label>
-              <select value={form.role} onChange={set('role')} className="form-input">
+              <label className="form-label flex items-center gap-1.5">
+                <User size={11} className="text-amber-400" /> Role
+              </label>
+              <select value={form.role} onChange={set('role')} className="form-input cursor-pointer">
                 <option value="student">Student</option>
                 <option value="driver">Driver</option>
                 <option value="transport_admin">Transport Admin</option>
@@ -332,11 +308,43 @@ function SignupForm({ onSwitchToLogin }) {
               </select>
             </div>
             <div>
-              <label className="form-label">Department</label>
-              <select value={form.department} onChange={set('department')} className="form-input">
-                {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
-              </select>
+              <label className="form-label flex items-center gap-1.5">
+                <Hash size={11} className="text-amber-400" /> Student ID
+                <span className="text-[#64748b] normal-case font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={form.studentId}
+                onChange={set('studentId')}
+                className="form-input"
+                placeholder="e.g. CSTE-2022-045"
+              />
             </div>
+          </div>
+
+          {/* Department Selection (Full width, categorized by faculty) */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="form-label mb-0 flex items-center gap-1.5">
+                <University size={11} className="text-amber-400" /> Faculty &amp; Department
+              </label>
+              <span className="text-[10px] text-amber-400/90 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                NSTU Academic
+              </span>
+            </div>
+            <select
+              value={form.department}
+              onChange={set('department')}
+              className="form-input cursor-pointer text-xs font-semibold py-3"
+            >
+              {FACULTY_DEPARTMENTS.map(group => (
+                <optgroup key={group.faculty} label={group.faculty}>
+                  {group.departments.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
 
           <button
@@ -360,11 +368,17 @@ function SignupForm({ onSwitchToLogin }) {
           </button>
 
           {/* Summary chip */}
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1">
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1.5">
             <div className="text-xs font-bold text-white">{form.name}</div>
-            {form.email    && <div className="text-[11px] text-[#94a3b8] flex items-center gap-1"><Mail  size={10} />{form.email}</div>}
-            {form.phone    && <div className="text-[11px] text-[#94a3b8] flex items-center gap-1"><Phone size={10} />{form.phone}</div>}
-            {form.studentId && <div className="text-[11px] text-[#94a3b8] flex items-center gap-1"><Hash  size={10} />{form.studentId}</div>}
+            <div className="text-[11px] text-amber-400 font-semibold flex items-center gap-1.5">
+              <University size={11} className="shrink-0" />
+              <span className="truncate">{form.department}</span>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 border-t border-amber-500/20 text-[11px] text-[#94a3b8]">
+              {form.email     && <span className="flex items-center gap-1"><Mail size={10} />{form.email}</span>}
+              {form.phone     && <span className="flex items-center gap-1"><Phone size={10} />{form.phone}</span>}
+              {form.studentId && <span className="flex items-center gap-1"><Hash size={10} />{form.studentId}</span>}
+            </div>
           </div>
 
           {/* New Password */}
