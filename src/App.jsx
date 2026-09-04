@@ -22,6 +22,7 @@ import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import BusPass from './pages/BusPass';
+import Trips from './pages/Trips';
 
 // Protected Route Wrapper (redirect to login if not authenticated)
 const ProtectedRoute = ({ children }) => {
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="routes" element={<RoutesPage />} />
           <Route path="stops" element={<Stops />} />
           <Route path="schedules" element={<Schedules />} />
+          <Route path="trips" element={<Trips />} />
           <Route path="tracking" element={<Tracking />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="complaints" element={<Complaints />} />

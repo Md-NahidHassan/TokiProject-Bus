@@ -10,7 +10,7 @@ USE `nstu_bus_tracker`;
 CREATE TABLE IF NOT EXISTS `users` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(100) NOT NULL,
-    `email` VARCHAR(100) NOT NULL UNIQUE,
+    `email` VARCHAR(100) DEFAULT NULL UNIQUE,
     `password` VARCHAR(255) NOT NULL,
     `role` ENUM('super_admin', 'transport_admin', 'driver', 'student') NOT NULL,
     `phone` VARCHAR(20) DEFAULT NULL,
@@ -69,13 +69,15 @@ CREATE TABLE IF NOT EXISTS `schedules` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `bus_id` INT NOT NULL,
     `route_id` INT NOT NULL,
+    `driver_id` INT DEFAULT NULL,
     `departure_time` TIME NOT NULL,
     `arrival_time` TIME NOT NULL,
     `shift` ENUM('morning', 'afternoon', 'evening') NOT NULL,
     `day_type` ENUM('regular', 'weekend', 'exam') DEFAULT 'regular',
     `status` ENUM('scheduled', 'in_transit', 'completed', 'cancelled') DEFAULT 'scheduled',
     FOREIGN KEY (`bus_id`) REFERENCES `buses`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`route_id`) REFERENCES `routes`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`route_id`) REFERENCES `routes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`driver_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 6. ATTENDANCE TABLE

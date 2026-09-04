@@ -17,10 +17,13 @@ try {
             s.arrival_time,
             s.shift,
             s.day_type,
-            s.status AS schedule_status
+            s.status AS schedule_status,
+            COALESCE(u_sched.name, u_bus.name, 'Unassigned Driver') AS driver
         FROM schedules s
         JOIN buses b ON s.bus_id = b.id
         JOIN routes r ON s.route_id = r.id
+        LEFT JOIN users u_sched ON s.driver_id = u_sched.id
+        LEFT JOIN users u_bus ON b.driver_id = u_bus.id
         ORDER BY s.departure_time ASC
     ");
 

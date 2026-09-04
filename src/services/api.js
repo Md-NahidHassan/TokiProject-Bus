@@ -51,6 +51,10 @@ export const DriverAPI = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
+  updateRoute: (data) => fetchAPI('/api/driver/update_route.php', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
   scanPass: (data) => fetchAPI('/api/driver/scan_student_pass.php', {
     method: 'POST',
     body: JSON.stringify(data),

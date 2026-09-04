@@ -12,44 +12,62 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $data = json_decode(file_get_contents("php://input"), true);
 
 $name = isset($data['name']) ? trim($data['name']) : '';
-$email = isset($data['email']) ? trim($data['email']) : null;
-$phone = isset($data['phone']) ? trim($data['phone']) : null;
-$student_id = isset($data['studentId']) ? trim($data['studentId']) : null;
+$email = (!empty($data['email']) && trim($data['email']) !== '') ? trim($data['email']) : null;
+$phone = (!empty($data['phone']) && trim($data['phone']) !== '') ? trim($data['phone']) : null;
+$student_id = (!empty($data['studentId']) && trim($data['studentId']) !== '') ? trim($data['studentId']) : null;
 $password = isset($data['password']) ? $data['password'] : '';
-$role = isset($data['role']) ? trim($data['role']) : 'student';
-$department = isset($data['department']) ? trim($data['department']) : 'General';
+$role = !empty($data['role']) ? trim($data['role']) : 'student';
+$department = !empty($data['department']) ? trim($data['department']) : 'General';
+
+// Validate role against enum values
+$allowed_roles = ['super_admin', 'transport_admin', 'driver', 'student'];
+if (!in_array($role, $allowed_roles)) {
+    $role = 'student';
+}
 
 if (empty($name) || empty($password) || (empty($email) && empty($phone) && empty($student_id))) {
     http_response_code(400);
-    echo json_encode(["success" => false, "message" => "Required fields missing."]);
+    echo json_encode(["success" => false, "message" => "Name, password, and at least one identifier (Email, Phone, or Student ID) are required."]);
     exit();
 }
 
 try {
-    // Check duplicates
-    $checkQuery = "SELECT id, email, phone, student_id FROM users WHERE 
-                   (email = :email AND email IS NOT NULL AND email != '') OR 
-                   (phone = :phone AND phone IS NOT NULL AND phone != '') OR 
-                   (student_id = :student_id AND student_id IS NOT NULL AND student_id != '') LIMIT 1";
-    $stmt = $pdo->prepare($checkQuery);
-    $stmt->execute([
-        'email' => $email,
-        'phone' => $phone,
-        'student_id' => $student_id
-    ]);
-    
-    $existing = $stmt->fetch();
-    if ($existing) {
-        if (!empty($email) && $existing['email'] === $email) {
-            $msg = 'Email already registered';
-        } else if (!empty($phone) && $existing['phone'] === $phone) {
-            $msg = 'Phone already registered';
-        } else {
-            $msg = 'Student ID already registered';
+    // Check duplicates dynamically based on provided identifiers
+    $conditions = [];
+    $params = [];
+    if (!empty($email)) {
+        $conditions[] = "email = :email";
+        $params['email'] = $email;
+    }
+    if (!empty($phone)) {
+        $conditions[] = "phone = :phone";
+        $params['phone'] = $phone;
+    }
+    if (!empty($student_id)) {
+        $conditions[] = "student_id = :student_id";
+        $params['student_id'] = $student_id;
+    }
+
+    if (!empty($conditions)) {
+        $checkQuery = "SELECT id, email, phone, student_id FROM users WHERE " . implode(" OR ", $conditions) . " LIMIT 1";
+        $stmt = $pdo->prepare($checkQuery);
+        $stmt->execute($params);
+        $existing = $stmt->fetch();
+        
+        if ($existing) {
+            if (!empty($email) && strcasecmp($existing['email'] ?? '', $email) === 0) {
+                $msg = 'Email already registered';
+            } else if (!empty($phone) && ($existing['phone'] ?? '') === $phone) {
+                $msg = 'Phone number already registered';
+            } else if (!empty($student_id) && strcasecmp($existing['student_id'] ?? '', $student_id) === 0) {
+                $msg = 'Student ID already registered';
+            } else {
+                $msg = 'An account with these details already exists';
+            }
+            http_response_code(409);
+            echo json_encode(["success" => false, "message" => $msg]);
+            exit();
         }
-        http_response_code(409);
-        echo json_encode(["success" => false, "message" => $msg]);
-        exit();
     }
 
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);

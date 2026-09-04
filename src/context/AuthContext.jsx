@@ -119,11 +119,11 @@ export function AuthProvider({ children }) {
           return { success: true };
         } else {
           setLoading(false);
-          return { success: false, error: res?.message || 'Login failed' };
+          return { success: false, error: res?.message || 'Login failed. Please verify credentials or ensure XAMPP is running.' };
         }
       } catch (e) {
         setLoading(false);
-        return { success: false, error: 'Network error during login' };
+        return { success: false, error: 'Network error during login. Please check connection.' };
       }
     }
 
@@ -200,11 +200,11 @@ export function AuthProvider({ children }) {
           return { success: true };
         } else {
           setLoading(false);
-          return { success: false, error: res?.message || 'Registration failed' };
+          return { success: false, error: res?.message || 'Registration failed. Please make sure XAMPP Apache and MySQL are running.' };
         }
       } catch (e) {
         setLoading(false);
-        return { success: false, error: 'Network error during registration' };
+        return { success: false, error: 'Network error during registration. Please check your connection.' };
       }
     }
 

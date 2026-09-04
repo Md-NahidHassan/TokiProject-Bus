@@ -23,8 +23,12 @@ if (empty($identifier) || empty($password)) {
 
 try {
     // Find user by email, phone, or student_id
-    $stmt = $pdo->prepare("SELECT id, name, email, password, role, phone, department, student_id, license_number, avatar, status FROM users WHERE (email = :identifier AND email != '') OR (phone = :identifier AND phone != '') OR (student_id = :identifier AND student_id != '') LIMIT 1");
-    $stmt->execute(['identifier' => $identifier]);
+    $stmt = $pdo->prepare("SELECT id, name, email, password, role, phone, department, student_id, license_number, avatar, status FROM users WHERE (email = :id1 AND email != '') OR (phone = :id2 AND phone != '') OR (student_id = :id3 AND student_id != '') LIMIT 1");
+    $stmt->execute([
+        'id1' => $identifier,
+        'id2' => $identifier,
+        'id3' => $identifier
+    ]);
     $user = $stmt->fetch();
 
     // Verification check (For demo, also support password check or fallback demo logic)
