@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { User, Save, Camera, Key, Shield, Bell } from 'lucide-react';
 import { PageHeader, SectionCard } from '../components/ui/SharedComponents';
 import { useAuth } from '../context/AuthContext';
+import { FACULTY_DEPARTMENTS } from '../data/departments';
 import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
@@ -90,16 +91,33 @@ export default function ProfilePage() {
               { key:'name', label:'Full Name' },
               { key:'email', label:'Email Address', type:'email' },
               { key:'phone', label:'Phone Number' },
-              { key:'department', label:'Department' },
+              { key:'department', label:'Department', type:'dept' },
             ].map(f => (
               <div key={f.key}>
                 <label className="form-label">{f.label}</label>
-                <input
-                  type={f.type || 'text'}
-                  value={form[f.key]}
-                  onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                  className="form-input"
-                />
+                {f.type === 'dept' ? (
+                  <select
+                    value={form[f.key]}
+                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    className="form-input"
+                  >
+                    <option value="">Select Department...</option>
+                    {FACULTY_DEPARTMENTS.map(group => (
+                      <optgroup key={group.faculty} label={group.faculty}>
+                        {group.departments.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={f.type || 'text'}
+                    value={form[f.key]}
+                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    className="form-input"
+                  />
+                )}
               </div>
             ))}
           </div>
